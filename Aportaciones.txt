@@ -238,4 +238,213 @@ Luego:
 Con eso ya quedará exactamente como lo pide la guía:
 **entra al detalle → botón flecha → regresa a la pantalla anterior.**
 
+Perfecto, esta es la **segunda parte → SearchScreen / SongResultRow**.
+
+Tu componente tiene varios problemas:
+
+1. Creaste **otra data class Song** ❌
+   Ya existe en `model/Song.kt`.
+
+2. No tiene navegación.
+
+3. No usa portada.
+
+4. El `clickable {}` está vacío.
+
+Vamos a arreglarlo completo.
+
+## SongResultRow corregido
+
+Quita esto:
+
+```kotlin
+data class Song (val title: String, val artist: String)
+```
+
+porque ya tienes tu modelo real.
+
+Agrega:
+
+```kotlin
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import com.example.lvluptemplate.model.Song
+```
+
+Luego reemplaza TODO por:
+
+```kotlin
+package com.example.lvluptemplate.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.example.lvluptemplate.model.Song
+
+@Composable
+fun SongResultRow(
+
+    song: Song,
+    onClick: () -> Unit
+
+) {
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+
+                onClick()
+
+            }
+            .padding(vertical = 8.dp),
+
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        AsyncImage(
+
+            model = song.coverUrl,
+
+            contentDescription = song.title,
+
+            contentScale = ContentScale.Crop,
+
+            modifier = Modifier
+                .size(50.dp)
+                .background(
+                    Color(0xFF1A1A1A),
+                    RoundedCornerShape(8.dp)
+                )
+
+        )
+
+        Spacer(
+            modifier = Modifier.width(16.dp)
+        )
+
+        Column {
+
+            Text(
+                text = song.title,
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Text(
+                text = song.artist,
+                color = Color.Gray,
+                fontSize = 14.sp
+            )
+
+        }
+
+    }
+
+}
+```
+
+---
+
+Ahora el **SearchScreen**.
+
+Ejemplo completo:
+
+```kotlin
+@Composable
+fun SearchScreen(
+    navController: NavController
+){
+
+    var search by remember {
+
+        mutableStateOf("")
+
+    }
+
+    val results = DummyData.allSongs.filter {
+
+        it.title.contains(search,true) ||
+
+        it.artist.contains(search,true) ||
+
+        it.album.contains(search,true)
+
+    }
+
+    Column(
+
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .padding(16.dp)
+
+    ){
+
+        OutlinedTextField(
+
+            value = search,
+
+            onValueChange = {
+
+                search = it
+
+            },
+
+            label = {
+
+                Text("Buscar")
+
+            }
+
+        )
+
+        LazyColumn {
+
+            items(results){ song ->
+
+                SongResultRow(
+
+                    song = song,
+
+                    onClick = {
+
+                        navController.navigate(
+                            "song/${song.id}"
+                        )
+
+                    }
+
+                )
+
+            }
+
+        }
+
+    }
+
+}
+```
+
+Ahora cumple la guía:
+
+✅ busca canciones
+✅ usa `DummyData`
+✅ muestra portada + título + artista
+✅ clickea resultado
+✅ navega a SongScreen
+✅ botón atrás ya funciona con `popBackStack()`
+
 
