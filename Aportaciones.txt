@@ -447,4 +447,189 @@ Ahora cumple la guía:
 ✅ navega a SongScreen
 ✅ botón atrás ya funciona con `popBackStack()`
 
+Perfecto, esta es la **3ra parte: Create Playlist + PlaylistScreen**.
+
+Tu `CreatePlaylistDialog` **ya está casi terminado**.
+Solo falta **conectarlo con playlists dinámicas** usando `DummyData`.
+
+Primero: elimina el duplicado del archivo porque pegaste el componente **2 veces**.
+
+Deja **solo uno**.
+
+---
+
+## PlaylistScreen completo
+
+Crea/edita `PlaylistScreen.kt`:
+
+```kotlin
+package com.example.lvluptemplate.screen
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import com.example.lvluptemplate.components.CreatePlaylistDialog
+import com.example.lvluptemplate.model.Playlist
+import com.example.lvluptemplate.resources.DummyData
+
+@Composable
+fun PlaylistScreen() {
+
+    var showDialog by remember {
+
+        mutableStateOf(false)
+
+    }
+
+    val playlists = remember {
+
+        mutableStateListOf(
+            *DummyData.playlists.toTypedArray()
+        )
+
+    }
+
+    Column(
+
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .padding(16.dp)
+
+    ){
+
+        Button(
+
+            onClick = {
+
+                showDialog = true
+
+            }
+
+        ){
+
+            Text("Nueva Playlist")
+
+        }
+
+        Spacer(
+            modifier = Modifier.height(16.dp)
+        )
+
+        LazyColumn {
+
+            items(playlists){ playlist ->
+
+                Card(
+
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+
+                ){
+
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ){
+
+                        Text(
+                            text = playlist.name
+                        )
+
+                        Text(
+                            text = playlist.description
+                        )
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+
+    if(showDialog){
+
+        CreatePlaylistDialog(
+
+            onDismiss = {
+
+                showDialog = false
+
+            },
+
+            onPlaylistCreated = { title ->
+
+                playlists.add(
+
+                    Playlist(
+
+                        id = "p${playlists.size+1}",
+
+                        name = title,
+
+                        description = "Playlist creada por usuario"
+
+                    )
+
+                )
+
+                showDialog = false
+
+            }
+
+        )
+
+    }
+
+}
+```
+
+---
+
+## Qué hace esto
+
+✔ abre diálogo
+
+✔ escribe nombre
+
+✔ presiona **Crear**
+
+✔ agrega playlist nueva
+
+✔ actualiza pantalla automáticamente
+
+✔ usa `DummyData` sin ROOM
+
+---
+
+Tu `CreatePlaylistDialog` YA sirve con esto:
+
+```kotlin
+onPlaylistCreated(title)
+```
+
+porque `PlaylistScreen` captura ese callback.
+
+---
+
+Esto cumple la tercera parte del parcial:
+
+✅ Crear playlist
+
+✅ Dialog funcionando
+
+✅ UI actualizada
+
+✅ Lista dinámica
+
+✅ Sin base de datos (DummyData).
 
