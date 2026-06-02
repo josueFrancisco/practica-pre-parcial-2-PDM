@@ -1,223 +1,241 @@
- @Entity(tableName = "songs")
-data class Song(
-    @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
+@Composable
+fun InfoCard(song: Song) {
 
-    val title: String,
-    val artist: String,
-    val album: String,
-    val coverUrl: String,
-    val genre: String
-)
+    Box(
+        modifier = Modifier
+            .size(180.dp,240.dp)
+            .padding(end = 16.dp)
+            .background(
+                Color(0xFF1A1A1A),
+                RoundedCornerShape(16.dp)
+            )
+            .padding(16.dp)
+    ){
 
-@Entity(tableName = "genres")
-data class Genre(
-    @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
+        Column {
 
-    val name: String,
-    val description: String
-)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp)
+                    .clickable { }
+            ){
 
-@Entity(tableName = "playlists")
-data class Playlist(
-    @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
+                AsyncImage(
 
-    val name: String,
-    val description: String
-)
+                    model = song.coverUrl,
 
-@Dao
-interface SongDao {
+                    contentDescription = song.title,
 
-    @Query("SELECT * FROM songs")
-    fun getAllSongs(): Flow<List<Song>>
+                    contentScale = ContentScale.Crop,
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertSong(song: Song)
+                    modifier = Modifier.matchParentSize()
 
-    @Query("""
-        SELECT * FROM songs
-        WHERE title LIKE '%' || :query || '%'
-        OR artist LIKE '%' || :query || '%'
-        OR album LIKE '%' || :query || '%'
-        OR genre LIKE '%' || :query || '%'
-    """)
-    fun searchSongs(query: String): Flow<List<Song>>
-}
+                )
 
-@Dao
-interface PlaylistDao {
-
-    @Query("SELECT * FROM playlists")
-    fun getAllPlaylists(): Flow<List<Playlist>>
-
-    @Insert
-    suspend fun insertPlaylist(playlist: Playlist)
-}
-
-@Database(
-    entities = [Song::class, Genre::class, Playlist::class],
-    version = 1
-)
-abstract class AppDatabase : RoomDatabase() {
-
-    abstract fun songDao(): SongDao
-    abstract fun playlistDao(): PlaylistDao
-}
-
-LazyColumn {
-
-    items(songList) { song ->
-
-        SongCard(
-            song = song,
-            onClick = {
-                navController.navigate("song/${song.id}")
             }
-        )
+
+            Spacer(
+                modifier = Modifier.height(16.dp)
+            )
+
+            Text(
+                text = song.title,
+                color = Color.White
+            )
+
+            Text(
+                text = song.artist,
+                color = Color.Gray
+            )
+
+        }
+
     }
+
 }
 
-IconButton(
-    onClick = {
-        navController.popBackStack()
-    }
-) {
-    Icon(Icons.Default.ArrowBack, null)
-}
+Perfecto. La guía pide **botón para regresar** usando `popBackStack()`.
 
-NavHost(
-    navController = navController,
-    startDestination = "main"
-) {
+Debes hacerlo en tu **SongScreen** (o donde tengas la pantalla de detalles).
 
-    composable("main") {
-        MainScreen(navController)
-    }
+## 1. Recibir `navController`
 
-    composable("search") {
-        SearchScreen(navController)
-    }
+Primero tu screen debe recibirlo:
 
-    composable("playlists") {
-        PlaylistScreen(navController)
-    }
-
-    composable("song/{id}") { backStackEntry ->
-
-        val id = backStackEntry.arguments
-            ?.getString("id")
-            ?.toInt()
-
-        SongScreen(navController, id!!)
-    }
-}
-
-OutlinedTextField(
-    value = searchText,
-    onValueChange = {
-        searchText = it
-    },
-    label = {
-        Text("Buscar")
-    }
+```kotlin id="38g3vh"
+@Composable
+fun SongScreen(
+    navController: NavController,
+    songId: String
 )
+```
 
-val songs by viewModel
-    .searchSongs(searchText)
-    .collectAsState(initial = emptyList())
+Importa:
 
-SongResultRow(
+```kotlin id="1w6k0y"
+import androidx.navigation.NavController
+```
+
+---
+
+## 2. Agregar botón Back
+
+Arriba de tu pantalla coloca esto:
+
+```kotlin id="p2w8yf"
+Row(
+    verticalAlignment = Alignment.CenterVertically
+) {
+
+    IconButton(
+        onClick = {
+
+            navController.popBackStack()
+
+        }
+    ) {
+
+        Icon(
+            imageVector = Icons.Default.ArrowBack,
+            contentDescription = "Regresar",
+            tint = Color.White
+        )
+
+    }
+
+}
+```
+
+Importa:
+
+```kotlin id="1fls3d"
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.IconButton
+```
+
+---
+
+## 3. Ejemplo completo
+
+```kotlin id="4nwske"
+@Composable
+fun SongScreen(
+    navController: NavController,
+    songId: String
+){
+
+    val song = DummyData.allSongs.find {
+
+        it.id == songId
+
+    }
+
+    Column(
+
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .padding(16.dp)
+
+    ) {
+
+        IconButton(
+
+            onClick = {
+
+                navController.popBackStack()
+
+            }
+
+        ) {
+
+            Icon(
+                Icons.Default.ArrowBack,
+                contentDescription = "Regresar",
+                tint = Color.White
+            )
+
+        }
+
+        Spacer(
+            modifier = Modifier.height(16.dp)
+        )
+
+        Text(
+            text = song?.title ?: "",
+            color = Color.White
+        )
+
+        Text(
+            text = song?.artist ?: "",
+            color = Color.Gray
+        )
+
+    }
+
+}
+```
+
+---
+
+## 4. Asegúrate que tu navegación tenga esto
+
+En `NavHost`:
+
+```kotlin id="5gp1t2"
+composable("song/{id}") {
+
+    val id = it.arguments
+        ?.getString("id")
+
+    SongScreen(
+        navController = navController,
+        songId = id!!
+    )
+
+}
+```
+
+---
+
+## 5. Navegar desde MainScreen
+
+Dentro del `InfoCard`:
+
+```kotlin id="htrj15"
+InfoCard(
     song = song,
     onClick = {
-        navController.navigate("song/${song.id}")
+
+        navController.navigate(
+            "song/${song.id}"
+        )
+
     }
 )
+```
 
-val playlists by viewModel.playlists.collectAsState()
+Y en `InfoCard`:
 
-LazyColumn {
+```kotlin id="l24u2s"
+fun InfoCard(
+    song: Song,
+    onClick: () -> Unit
+)
+```
 
-    items(playlists) { playlist ->
+Luego:
 
-        PlaylistCardComponent(
-            playlist = playlist,
-            onClick = {
-                navController.navigate("playlist/${playlist.id}")
-            }
-        )
-    }
+```kotlin id="4e7k6s"
+.clickable {
+
+    onClick()
+
 }
+```
 
-Button(
-    onClick = {
+Con eso ya quedará exactamente como lo pide la guía:
+**entra al detalle → botón flecha → regresa a la pantalla anterior.**
 
-        viewModel.insertPlaylist(
-            Playlist(
-                name = name,
-                description = description
-            )
-        )
-    }
-) {
-    Text("Guardar")
-} 
 
-Column {
-
-    Text(
-        text = playlist.name
-    )
-
-    LazyColumn {
-
-        items(songList) { song ->
-
-            Text(song.title)
-        }
-    }
-}
-
-NavigationBar {
-
-    NavigationBarItem(
-        selected = false,
-        onClick = {
-            navController.navigate("main")
-        },
-        icon = {
-            Icon(Icons.Default.Home, null)
-        }
-    )
-
-    NavigationBarItem(
-        selected = false,
-        onClick = {
-            navController.navigate("search")
-        },
-        icon = {
-            Icon(Icons.Default.Search, null)
-        }
-    )
-
-    NavigationBarItem(
-        selected = false,
-        onClick = {
-            navController.navigate("playlists")
-        },
-        icon = {
-            Icon(Icons.Default.List, null)
-        }
-    )
-}
-
-IconButton(
-    onClick = {
-
-        viewModel.addSongToFavorites(song)
-    }
-) {
-    Icon(Icons.Default.Favorite, null)
-}
