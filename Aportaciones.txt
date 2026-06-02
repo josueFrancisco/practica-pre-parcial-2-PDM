@@ -1,1 +1,223 @@
-aqui se puede meter cosas para estudiar 
+ @Entity(tableName = "songs")
+data class Song(
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+
+    val title: String,
+    val artist: String,
+    val album: String,
+    val coverUrl: String,
+    val genre: String
+)
+
+@Entity(tableName = "genres")
+data class Genre(
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+
+    val name: String,
+    val description: String
+)
+
+@Entity(tableName = "playlists")
+data class Playlist(
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+
+    val name: String,
+    val description: String
+)
+
+@Dao
+interface SongDao {
+
+    @Query("SELECT * FROM songs")
+    fun getAllSongs(): Flow<List<Song>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSong(song: Song)
+
+    @Query("""
+        SELECT * FROM songs
+        WHERE title LIKE '%' || :query || '%'
+        OR artist LIKE '%' || :query || '%'
+        OR album LIKE '%' || :query || '%'
+        OR genre LIKE '%' || :query || '%'
+    """)
+    fun searchSongs(query: String): Flow<List<Song>>
+}
+
+@Dao
+interface PlaylistDao {
+
+    @Query("SELECT * FROM playlists")
+    fun getAllPlaylists(): Flow<List<Playlist>>
+
+    @Insert
+    suspend fun insertPlaylist(playlist: Playlist)
+}
+
+@Database(
+    entities = [Song::class, Genre::class, Playlist::class],
+    version = 1
+)
+abstract class AppDatabase : RoomDatabase() {
+
+    abstract fun songDao(): SongDao
+    abstract fun playlistDao(): PlaylistDao
+}
+
+LazyColumn {
+
+    items(songList) { song ->
+
+        SongCard(
+            song = song,
+            onClick = {
+                navController.navigate("song/${song.id}")
+            }
+        )
+    }
+}
+
+IconButton(
+    onClick = {
+        navController.popBackStack()
+    }
+) {
+    Icon(Icons.Default.ArrowBack, null)
+}
+
+NavHost(
+    navController = navController,
+    startDestination = "main"
+) {
+
+    composable("main") {
+        MainScreen(navController)
+    }
+
+    composable("search") {
+        SearchScreen(navController)
+    }
+
+    composable("playlists") {
+        PlaylistScreen(navController)
+    }
+
+    composable("song/{id}") { backStackEntry ->
+
+        val id = backStackEntry.arguments
+            ?.getString("id")
+            ?.toInt()
+
+        SongScreen(navController, id!!)
+    }
+}
+
+OutlinedTextField(
+    value = searchText,
+    onValueChange = {
+        searchText = it
+    },
+    label = {
+        Text("Buscar")
+    }
+)
+
+val songs by viewModel
+    .searchSongs(searchText)
+    .collectAsState(initial = emptyList())
+
+SongResultRow(
+    song = song,
+    onClick = {
+        navController.navigate("song/${song.id}")
+    }
+)
+
+val playlists by viewModel.playlists.collectAsState()
+
+LazyColumn {
+
+    items(playlists) { playlist ->
+
+        PlaylistCardComponent(
+            playlist = playlist,
+            onClick = {
+                navController.navigate("playlist/${playlist.id}")
+            }
+        )
+    }
+}
+
+Button(
+    onClick = {
+
+        viewModel.insertPlaylist(
+            Playlist(
+                name = name,
+                description = description
+            )
+        )
+    }
+) {
+    Text("Guardar")
+} 
+
+Column {
+
+    Text(
+        text = playlist.name
+    )
+
+    LazyColumn {
+
+        items(songList) { song ->
+
+            Text(song.title)
+        }
+    }
+}
+
+NavigationBar {
+
+    NavigationBarItem(
+        selected = false,
+        onClick = {
+            navController.navigate("main")
+        },
+        icon = {
+            Icon(Icons.Default.Home, null)
+        }
+    )
+
+    NavigationBarItem(
+        selected = false,
+        onClick = {
+            navController.navigate("search")
+        },
+        icon = {
+            Icon(Icons.Default.Search, null)
+        }
+    )
+
+    NavigationBarItem(
+        selected = false,
+        onClick = {
+            navController.navigate("playlists")
+        },
+        icon = {
+            Icon(Icons.Default.List, null)
+        }
+    )
+}
+
+IconButton(
+    onClick = {
+
+        viewModel.addSongToFavorites(song)
+    }
+) {
+    Icon(Icons.Default.Favorite, null)
+}
